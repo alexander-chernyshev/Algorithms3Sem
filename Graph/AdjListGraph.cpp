@@ -15,6 +15,6 @@ void AdjListGraph::AddEdge(const Graph::Vertex &from, const Graph::Vertex &to) {
         adj_list[to].push_back(from);
 }
 
-const std::vector<Graph::Vertex>& AdjListGraph::GetNeighbours(const Graph::Vertex &v) {
+std::vector<Graph::Vertex> AdjListGraph::GetNeighbours(const Graph::Vertex &v) const{
     return adj_list[v];
 }

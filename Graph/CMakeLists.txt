@@ -3,4 +3,4 @@ project(Graph)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(Graph main.cpp Graph.h Graph.cpp AdjListGraph.cpp AdjListGraph.h)
+add_executable(Graph main.cpp Graph.h Graph.cpp AdjListGraph.cpp AdjListGraph.h MatrixGraph.cpp MatrixGraph.h)

@@ -12,6 +12,7 @@ namespace GraphProcessing {
     enum VertexMark{WHITE, GREY, BLACK};
 
 
+
 }
 
 class Graph {
@@ -23,7 +24,7 @@ public:
     typedef size_t Vertex;
     Graph(size_t _vertex_count, bool _is_oriented);
 
-    virtual const std::vector<Vertex>& GetNeighbours(const Vertex& v) = 0;
+    virtual std::vector<Vertex> GetNeighbours(const Vertex& v) const = 0;
     virtual void AddEdge(const Vertex& from, const Vertex& to) = 0;
 };
 
