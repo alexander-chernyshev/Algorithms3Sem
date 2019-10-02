@@ -12,9 +12,9 @@
 
 class MatrixGraph : public Graph {
 private:
-    std::vector<std::vector<size_t>> matrix;
+    std::vector<std::vector<size_t>> has_edge;
 public:
-    MatrixGraph(size_t _vertex_count, bool _is_oriented);
+    MatrixGraph(size_t _vertex_count, bool _directed);
 
     std::vector<Vertex> GetNeighbours(const Vertex& v) const override;
     void AddEdge(const Vertex& from, const Vertex& to) override;

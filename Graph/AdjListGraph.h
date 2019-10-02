@@ -14,7 +14,7 @@ class AdjListGraph : public Graph{
 private:
     std::vector<std::vector<Vertex>> adj_list;
 public:
-    AdjListGraph(size_t _vertex_count, bool _is_oriented);
+    AdjListGraph(size_t _vertex_count, bool _directed);
 
     std::vector<Vertex> GetNeighbours(const Vertex& v) const override;
     void AddEdge(const Vertex& from, const Vertex& to) override;

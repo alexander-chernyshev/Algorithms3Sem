@@ -4,7 +4,11 @@
 
 #include "Graph.h"
 
-Graph::Graph(size_t _vertex_count, bool _is_oriented) {
+Graph::Graph(size_t _vertex_count, bool _directed) {
     vertex_count = _vertex_count;
-    is_oriented = _is_oriented;
+    directed = _directed;
+}
+
+size_t Graph::GetVertexCount() const {
+    return vertex_count;
 }
