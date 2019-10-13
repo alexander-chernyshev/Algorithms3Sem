@@ -49,10 +49,11 @@ namespace GraphProcessing {
                                     std::vector<Graph::Vertex> &component) {
         color[v] = GREY;
         component.push_back(v);
-        for (Graph::Vertex &u : g.GetNeighbours(v))
+        for (Graph::Vertex &u : g.GetNeighbours(v)) {
             if (color[u] == WHITE) {
                 GetVerticesInSameComponent(g, color, u, component);
             }
+        }
         color[v] = BLACK;
     }
 
@@ -73,8 +74,9 @@ int main() {
         for (size_t j = 0; j < count; ++j) {
             size_t val;
             std::cin >> val;
-            if (val != 0)
+            if (val != 0) {
                 graph.AddEdge(i, j);
+            }
         }
     }
     std::cout << GraphProcessing::GetComponent(graph, vert - 1).size();

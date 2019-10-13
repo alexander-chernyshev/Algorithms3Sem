@@ -41,6 +41,8 @@ public:
 namespace GraphProcessing {
     enum VertexMark {WHITE, GREY, BLACK};
 
+struct UndirectedTopologicalSort : public std::exception{};
+
     void dfs(const Graph& g, Graph::Vertex v, std::vector<VertexMark>& color, std::vector<Graph::Vertex>& order, int& err) {
         color[v] = GREY;
         for (Graph::Vertex& u : g.GetNeighbours(v)) {
@@ -57,11 +59,7 @@ namespace GraphProcessing {
 
     std::vector<Graph::Vertex> TopologicalSort(Graph& g) {
         if (!g.IsDirected()) { // в случае неориентированного графа можно вернуть любой порядок вершин :)
-            std::vector<Graph::Vertex> order(g.GetVertexCount());
-            for (size_t i = 0; i < g.GetVertexCount(); ++i) {
-                order[i] = i;
-            }
-            return order;
+            throw GraphProcessing::UndirectedTopologicalSort();
         }
         std::vector<VertexMark> color(g.GetVertexCount(), WHITE);
         std::vector<Graph::Vertex> order;
@@ -89,15 +87,20 @@ int main() {
         std::cin >> from >> to;
         graph.AddEdge(from - 1, to - 1);
     }
-    std::vector<Graph::Vertex> order = GraphProcessing::TopologicalSort(graph);
-    if (order.empty()) {
-        std::cout << "No" << std::endl;
-    } else {
-        std::cout << "Yes\n";
-        for (Graph::Vertex& v : order) {
-            std::cout << v + 1 << ' ';
+    try {
+        std::vector<Graph::Vertex> order = GraphProcessing::TopologicalSort(graph);
+        if (order.empty()) {
+            std::cout << "No" << std::endl;
+        } else {
+            std::cout << "Yes\n";
+            for (Graph::Vertex& v : order) {
+                std::cout << v + 1 << ' ';
+            }
         }
     }
+    catch (const GraphProcessing::UndirectedTopologicalSort& e) {
+        std::cout << "error: expected directed graph, got undirected" << std::endl;
+    };
     return 0;
 }
 

@@ -40,7 +40,7 @@ public:
 };
 
 namespace GraphProcessing {
-
+struct WrongMatrixSize : public std::exception {};
 }
 
 int main() {
@@ -53,8 +53,13 @@ int main() {
             std::cin >> adj_matrix[i][j];
         }
     }
-    MatrixGraph g(vertex_count, adj_matrix, false);
-    std::cout << g.GetEdgeCount();
+    try {
+        MatrixGraph g(vertex_count, adj_matrix, false);
+        std::cout << g.GetEdgeCount();
+    }
+    catch (const GraphProcessing::WrongMatrixSize& e) {
+        std::cout << "error: wrong input matrix size" << std::endl;
+    };
     return 0;
 }
 
@@ -78,6 +83,14 @@ AdjListGraph::AdjListGraph(size_t _vertex_count, bool _directed)
 
 AdjListGraph::AdjListGraph(size_t _vertex_count, const std::vector<std::vector<size_t>> &adj_matrix, bool _directed)
         : Graph(_vertex_count, _directed) {
+    if (adj_matrix.size() != vertex_count) {
+        throw GraphProcessing::WrongMatrixSize();
+    }
+    for (size_t i = 0; i < vertex_count; ++i) {
+        if (adj_matrix[i].size() != vertex_count) {
+            throw GraphProcessing::WrongMatrixSize();
+        }
+    }
     adj_list = std::vector<std::vector<Graph::Vertex>>(vertex_count);
     for (size_t i = 0; i < vertex_count; ++i) {
         for (size_t j = 0; j < vertex_count; ++j) {
@@ -108,6 +121,14 @@ MatrixGraph::MatrixGraph(size_t _vertex_count, bool _directed): Graph(_vertex_co
 
 MatrixGraph::MatrixGraph(size_t _vertex_count, const std::vector<std::vector<size_t >> &adj_matrix, bool _directed)
         : Graph(_vertex_count, _directed) {
+    if (adj_matrix.size() != vertex_count) {
+        throw GraphProcessing::WrongMatrixSize();
+    }
+    for (size_t i = 0; i < vertex_count; ++i) {
+        if (adj_matrix[i].size() != vertex_count) {
+            throw GraphProcessing::WrongMatrixSize();
+        }
+    }
     has_edge = adj_matrix;
     for (size_t i = 0; i < vertex_count; ++i) {
         for (size_t j = 0; j < vertex_count; ++j) {
