@@ -42,6 +42,10 @@ public:
     void AddEdge(const Vertex &from, const Vertex &to) override;
 };
 
+size_t GetVertexIndex(size_t graph_width, size_t i, size_t j) {
+    return i * graph_width + j;
+};
+
 namespace GraphProcessing {
     const int UNVISITED_VERTEX = -1;
 
@@ -71,10 +75,6 @@ namespace GraphProcessing {
         return distance;
     }
 
-    size_t GetVertexIndex(size_t graph_width, size_t i, size_t j) {
-        return i * graph_width + j;
-    };
-
     AdjListGraph GraphGeneration(size_t width, size_t height) {
         AdjListGraph graph(width * height, false);
         for (size_t i = 0; i < height; ++i) {
@@ -102,14 +102,14 @@ int main() {
             size_t val;
             std::cin >> val;
             if (val == 1) {
-                one_points.push_back(GraphProcessing::GetVertexIndex(width, i, j));
+                one_points.push_back(GetVertexIndex(width, i, j));
             }
         }
     }
     std::vector<size_t> distances = GraphProcessing::GetDistances(g, one_points);
     for (size_t i = 0; i < height; ++i) {
         for (size_t j = 0; j < width; ++j) {
-            std::cout << distances[GraphProcessing::GetVertexIndex(width, i, j)] << ' ';
+            std::cout << distances[GetVertexIndex(width, i, j)] << ' ';
         }
         std::cout << '\n';
     }
