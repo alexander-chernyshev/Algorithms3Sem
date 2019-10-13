@@ -10,21 +10,25 @@ protected:
     bool directed;
 public:
     typedef size_t Vertex;
+
     Graph(size_t _vertex_count, bool _directed);
+
     size_t GetVertexCount() const;
 
-    virtual std::vector<Vertex> GetNeighbours(const Vertex& v) const = 0;
-    virtual void AddEdge(const Vertex& from, const Vertex& to) = 0;
+    virtual std::vector<Vertex> GetNeighbours(const Vertex &v) const = 0;
+
+    virtual void AddEdge(const Vertex &from, const Vertex &to) = 0;
 };
 
-class AdjListGraph : public Graph{
+class AdjListGraph : public Graph {
 private:
     std::vector<std::vector<Vertex>> adj_list;
 public:
     AdjListGraph(size_t _vertex_count, bool _directed);
 
-    std::vector<Vertex> GetNeighbours(const Vertex& v) const override;
-    void AddEdge(const Vertex& from, const Vertex& to) override;
+    std::vector<Vertex> GetNeighbours(const Vertex &v) const override;
+
+    void AddEdge(const Vertex &from, const Vertex &to) override;
 };
 
 class MatrixGraph : public Graph {
@@ -33,18 +37,19 @@ private:
 public:
     MatrixGraph(size_t _vertex_count, bool _directed);
 
-    std::vector<Vertex> GetNeighbours(const Vertex& v) const override;
-    void AddEdge(const Vertex& from, const Vertex& to) override;
+    std::vector<Vertex> GetNeighbours(const Vertex &v) const override;
+
+    void AddEdge(const Vertex &from, const Vertex &to) override;
 };
 
 namespace GraphProcessing {
     const int UNVISITED_VERTEX = -1;
 
-    void bfs(const Graph& g, const std::vector<Graph::Vertex>& start_vertices, std::vector<size_t>& distance) {
+    void bfs(const Graph &g, const std::vector<Graph::Vertex> &start_vertices, std::vector<size_t> &distance) {
         const size_t default_distance = g.GetVertexCount() + 1;
         std::queue<Graph::Vertex> q;
         distance = std::vector<size_t>(g.GetVertexCount(), default_distance);
-        for (const Graph::Vertex& v : start_vertices) {
+        for (const Graph::Vertex &v : start_vertices) {
             distance[v] = 0;
             q.push(v);
         }
@@ -60,18 +65,18 @@ namespace GraphProcessing {
         }
     }
 
-    std::vector<size_t> GetDistances(const Graph& g, const std::vector<Graph::Vertex>& start_points) {
+    std::vector<size_t> GetDistances(const Graph &g, const std::vector<Graph::Vertex> &start_points) {
         std::vector<size_t> distance;
         bfs(g, start_points, distance);
         return distance;
     }
 
     size_t GetVertexIndex(size_t graph_width, size_t i, size_t j) {
-        return i*graph_width + j;
+        return i * graph_width + j;
     };
 
     AdjListGraph GraphGeneration(size_t width, size_t height) {
-        AdjListGraph graph(width*height, false);
+        AdjListGraph graph(width * height, false);
         for (size_t i = 0; i < height; ++i) {
             for (size_t j = 1; j < width; ++j) {
                 graph.AddEdge(GetVertexIndex(width, i, j), GetVertexIndex(width, i, j - 1));
@@ -84,9 +89,7 @@ namespace GraphProcessing {
         }
         return graph;
     }
-
 }
-
 
 
 int main() {
@@ -99,14 +102,14 @@ int main() {
             size_t val;
             std::cin >> val;
             if (val == 1) {
-                one_points.push_back(i * width + j);
+                one_points.push_back(GraphProcessing::GetVertexIndex(width, i, j));
             }
         }
     }
     std::vector<size_t> distances = GraphProcessing::GetDistances(g, one_points);
     for (size_t i = 0; i < height; ++i) {
         for (size_t j = 0; j < width; ++j) {
-            std::cout << distances[i * width + j] << ' ';
+            std::cout << distances[GraphProcessing::GetVertexIndex(width, i, j)] << ' ';
         }
         std::cout << '\n';
     }
@@ -139,7 +142,7 @@ std::vector<Graph::Vertex> AdjListGraph::GetNeighbours(const Graph::Vertex &v) c
     return adj_list[v];
 }
 
-MatrixGraph::MatrixGraph(size_t _vertex_count, bool _directed): Graph(_vertex_count, _directed) {
+MatrixGraph::MatrixGraph(size_t _vertex_count, bool _directed) : Graph(_vertex_count, _directed) {
     has_edge = std::vector<std::vector<size_t>>(vertex_count);
     for (Vertex i = 0; i < vertex_count; ++i)
         has_edge[i].resize(vertex_count);

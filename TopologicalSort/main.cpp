@@ -13,7 +13,9 @@ public:
 
     virtual std::vector<Vertex> GetNeighbours(const Vertex& v) const = 0;
     virtual void AddEdge(const Vertex& from, const Vertex& to) = 0;
+
     size_t GetVertexCount() const;
+    bool IsDirected() const;
 };
 
 class AdjListGraph : public Graph{
@@ -37,15 +39,14 @@ public:
 };
 
 namespace GraphProcessing {
-    enum VertexMark{WHITE, GREY, BLACK};
+    enum VertexMark {WHITE, GREY, BLACK};
 
     void dfs(const Graph& g, Graph::Vertex v, std::vector<VertexMark>& color, std::vector<Graph::Vertex>& order, int& err) {
         color[v] = GREY;
         for (Graph::Vertex& u : g.GetNeighbours(v)) {
             if (color[u] == WHITE) {
                 dfs(g, u, color, order, err);
-            }
-            else if (color[u] == GREY) {
+            } else if (color[u] == GREY) {
                 err = 1;
                 return;
             }
@@ -55,14 +56,22 @@ namespace GraphProcessing {
     }
 
     std::vector<Graph::Vertex> TopologicalSort(Graph& g) {
+        if (!g.IsDirected()) { // в случае неориентированного графа можно вернуть любой порядок вершин :)
+            std::vector<Graph::Vertex> order(g.GetVertexCount());
+            for (size_t i = 0; i < g.GetVertexCount(); ++i) {
+                order[i] = i;
+            }
+            return order;
+        }
         std::vector<VertexMark> color(g.GetVertexCount(), WHITE);
         std::vector<Graph::Vertex> order;
         int err = 0;
         for (Graph::Vertex v = 0; v < g.GetVertexCount(); ++v) {
             if (color[v] == WHITE) {
                 dfs(g, v, color, order, err);
-                if (err)
+                if (err) {
                     return std::vector<Graph::Vertex>();
+                }
             }
         }
         std::reverse(order.begin(), order.end());
@@ -99,6 +108,10 @@ Graph::Graph(size_t _vertex_count, bool _directed) {
 
 size_t Graph::GetVertexCount() const {
     return vertex_count;
+}
+
+bool Graph::IsDirected() const {
+    return directed;
 }
 
 AdjListGraph::AdjListGraph(size_t _vertex_count, bool _directed)

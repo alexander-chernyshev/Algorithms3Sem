@@ -10,6 +10,11 @@ MatrixGraph::MatrixGraph(size_t _vertex_count, bool _directed): Graph(_vertex_co
         has_edge[i].resize(vertex_count);
 }
 
+MatrixGraph::MatrixGraph(size_t _vertex_count, const std::vector<std::vector<size_t >> &adj_matrix, bool _directed)
+        : Graph(_vertex_count, _directed) {
+    has_edge = adj_matrix;
+}
+
 std::vector<Graph::Vertex> MatrixGraph::GetNeighbours(const Graph::Vertex &v) const {
     std::vector<Graph::Vertex> neighbours;
     for (Vertex i = 0; i < vertex_count; ++i) {

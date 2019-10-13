@@ -13,17 +13,20 @@ protected:
 public:
     typedef size_t Vertex;
     Graph(size_t _vertex_count, bool _directed);
-    size_t GetVertexCount() const;
 
     virtual std::vector<Vertex> GetNeighbours(const Vertex& v) const = 0;
     virtual void AddEdge(const Vertex& from, const Vertex& to) = 0;
+
+    size_t GetVertexCount() const;
+    size_t GetEdgeCount() const;
 };
 
-class AdjListGraph : public Graph{
+class AdjListGraph : public Graph {
 private:
     std::vector<std::vector<Vertex>> adj_list;
 public:
     AdjListGraph(size_t _vertex_count, bool _directed);
+    AdjListGraph(size_t _vertex_count, const std::vector<std::vector<size_t >>& adj_matrix, bool _directed);
 
     std::vector<Vertex> GetNeighbours(const Vertex& v) const override;
     void AddEdge(const Vertex& from, const Vertex& to) override;
@@ -34,6 +37,7 @@ private:
     std::vector<std::vector<size_t>> has_edge;
 public:
     MatrixGraph(size_t _vertex_count, bool _directed);
+    MatrixGraph(size_t _vertex_count, const std::vector<std::vector<size_t >>& adj_matrix, bool _directed);
 
     std::vector<Vertex> GetNeighbours(const Vertex& v) const override;
     void AddEdge(const Vertex& from, const Vertex& to) override;
@@ -41,18 +45,6 @@ public:
 
 namespace GraphProcessing {
     const int UNVISITED_VERTEX = -1;
-
-    void ReadMatrixGraph(Graph& g) {
-        size_t vertex_count = g.GetVertexCount();
-        for (size_t i = 0; i < vertex_count; ++i) {
-            for (size_t j = 0; j < vertex_count; ++j) {
-                size_t value;
-                std::cin >> value;
-                if (value != 0)
-                    g.AddEdge(i, j);
-            }
-        }
-    }
 
     void bfs(const Graph& g, Graph::Vertex start, std::vector<int>& prev) {
         std::queue<Graph::Vertex> q;
@@ -62,7 +54,7 @@ namespace GraphProcessing {
             Graph::Vertex current_vertex = q.front();
             q.pop();
             for (auto v : g.GetNeighbours(current_vertex)) {
-                if (prev[v] == -1) {
+                if (prev[v] == UNVISITED_VERTEX) {
                     q.push(v);
                     prev[v] = current_vertex;
                 }
@@ -80,9 +72,10 @@ namespace GraphProcessing {
             return std::vector<Graph::Vertex>();
         }
         std::vector<Graph::Vertex> path;
-        while (to != from) {
-            path.push_back(to);
-            to = prev[to];
+        Graph::Vertex current = to;
+        while (current != from) {
+            path.push_back(current);
+            current = prev[current];
         }
         path.push_back(from);
         std::reverse(path.begin(), path.end());
@@ -93,8 +86,14 @@ namespace GraphProcessing {
 int main() {
     size_t vertex_count;
     std::cin >> vertex_count;
-    AdjListGraph graph(vertex_count, false);
-    GraphProcessing::ReadMatrixGraph(graph);
+    std::vector<std::vector<size_t >> adj_matrix(vertex_count);
+    for (size_t i = 0; i < vertex_count; ++i) {
+        adj_matrix[i].resize(vertex_count);
+        for (size_t j = 0; j < vertex_count; ++j) {
+            std::cin >> adj_matrix[i][j];
+        }
+    }
+    AdjListGraph graph(vertex_count, adj_matrix,false);
     Graph::Vertex from, to;
     std::cin >> from >> to;
     std::vector<Graph::Vertex> path = GraphProcessing::GetShortestPath(graph, from - 1, to - 1);
@@ -104,8 +103,9 @@ int main() {
         std::cout << 0;
     } else {
         std::cout << path.size() - 1 << std::endl;
-        for (auto v : path)
+        for (auto v : path) {
             std::cout << v + 1 << ' ';
+        }
     }
     return 0;
 }
@@ -119,9 +119,25 @@ size_t Graph::GetVertexCount() const {
     return vertex_count;
 }
 
+size_t Graph::GetEdgeCount() const {
+    return edge_count;
+}
+
 AdjListGraph::AdjListGraph(size_t _vertex_count, bool _directed)
         : Graph(_vertex_count, _directed) {
     adj_list = std::vector<std::vector<Graph::Vertex>>(vertex_count);
+}
+
+AdjListGraph::AdjListGraph(size_t _vertex_count, const std::vector<std::vector<size_t>> &adj_matrix, bool _directed)
+        : Graph(_vertex_count, _directed) {
+    adj_list = std::vector<std::vector<Graph::Vertex>>(vertex_count);
+    for (size_t i = 0; i < vertex_count; ++i) {
+        for (size_t j = 0; j < vertex_count; ++j) {
+            if (adj_matrix[i][j] != 0) {
+                AddEdge(i, j);
+            }
+        }
+    }
 }
 
 void AdjListGraph::AddEdge(const Graph::Vertex &from, const Graph::Vertex &to) {
@@ -140,6 +156,21 @@ MatrixGraph::MatrixGraph(size_t _vertex_count, bool _directed): Graph(_vertex_co
     has_edge = std::vector<std::vector<size_t>>(vertex_count);
     for (Vertex i = 0; i < vertex_count; ++i)
         has_edge[i].resize(vertex_count);
+}
+
+MatrixGraph::MatrixGraph(size_t _vertex_count, const std::vector<std::vector<size_t >> &adj_matrix, bool _directed)
+        : Graph(_vertex_count, _directed) {
+    has_edge = adj_matrix;
+    for (size_t i = 0; i < vertex_count; ++i) {
+        for (size_t j = 0; j < vertex_count; ++j) {
+            if (has_edge[i][j] != 0) {
+                ++edge_count;
+            }
+        }
+    }
+    if (!directed) {
+        edge_count /= 2;
+    }
 }
 
 std::vector<Graph::Vertex> MatrixGraph::GetNeighbours(const Graph::Vertex &v) const {

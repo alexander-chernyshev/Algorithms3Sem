@@ -8,21 +8,25 @@ protected:
     bool directed;
 public:
     typedef size_t Vertex;
+
     Graph(size_t _vertex_count, bool _directed);
 
-    virtual std::vector<Vertex> GetNeighbours(const Vertex& v) const = 0;
-    virtual void AddEdge(const Vertex& from, const Vertex& to) = 0;
+    virtual std::vector<Vertex> GetNeighbours(const Vertex &v) const = 0;
+
+    virtual void AddEdge(const Vertex &from, const Vertex &to) = 0;
+
     size_t GetVertexCount() const;
 };
 
-class AdjListGraph : public Graph{
+class AdjListGraph : public Graph {
 private:
     std::vector<std::vector<Vertex>> adj_list;
 public:
     AdjListGraph(size_t _vertex_count, bool _directed);
 
-    std::vector<Vertex> GetNeighbours(const Vertex& v) const override;
-    void AddEdge(const Vertex& from, const Vertex& to) override;
+    std::vector<Vertex> GetNeighbours(const Vertex &v) const override;
+
+    void AddEdge(const Vertex &from, const Vertex &to) override;
 };
 
 class MatrixGraph : public Graph {
@@ -31,29 +35,33 @@ private:
 public:
     MatrixGraph(size_t _vertex_count, bool _directed);
 
-    std::vector<Vertex> GetNeighbours(const Vertex& v) const override;
-    void AddEdge(const Vertex& from, const Vertex& to) override;
+    std::vector<Vertex> GetNeighbours(const Vertex &v) const override;
+
+    void AddEdge(const Vertex &from, const Vertex &to) override;
 };
 
 namespace GraphProcessing {
-    enum VertexMark{WHITE, GREY, BLACK};
+    enum VertexMark {
+        WHITE, GREY, BLACK
+    };
 
-    void GetVerticesInSameComponent(const Graph& g, std::vector<VertexMark>& color, Graph::Vertex v, std::vector<Graph::Vertex>& component) {
+    void GetVerticesInSameComponent(const Graph &g, std::vector<VertexMark> &color, Graph::Vertex v,
+                                    std::vector<Graph::Vertex> &component) {
         color[v] = GREY;
         component.push_back(v);
-        for (Graph::Vertex& u : g.GetNeighbours(v))
+        for (Graph::Vertex &u : g.GetNeighbours(v))
             if (color[u] == WHITE) {
                 GetVerticesInSameComponent(g, color, u, component);
             }
         color[v] = BLACK;
     }
 
-    size_t CountVerticesInSameComponent(const Graph& g, Graph::Vertex v) {
+    std::vector<Graph::Vertex> GetComponent(const Graph &g, Graph::Vertex v) {
         size_t vertex_count = g.GetVertexCount();
         std::vector<Graph::Vertex> component;
         std::vector<VertexMark> color(vertex_count, WHITE);
         GetVerticesInSameComponent(g, color, v, component);
-        return component.size();
+        return component;
     }
 }
 
@@ -69,7 +77,7 @@ int main() {
                 graph.AddEdge(i, j);
         }
     }
-    std::cout << GraphProcessing::CountVerticesInSameComponent(graph, vert - 1);
+    std::cout << GraphProcessing::GetComponent(graph, vert - 1).size();
     return 0;
 }
 
@@ -99,7 +107,7 @@ std::vector<Graph::Vertex> AdjListGraph::GetNeighbours(const Graph::Vertex &v) c
     return adj_list[v];
 }
 
-MatrixGraph::MatrixGraph(size_t _vertex_count, bool _directed): Graph(_vertex_count, _directed) {
+MatrixGraph::MatrixGraph(size_t _vertex_count, bool _directed) : Graph(_vertex_count, _directed) {
     has_edge = std::vector<std::vector<size_t>>(vertex_count);
     for (Vertex i = 0; i < vertex_count; ++i)
         has_edge[i].resize(vertex_count);
