@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 class Graph {
 protected:
@@ -29,52 +30,64 @@ public:
     void AddEdge(const Vertex &from, const Vertex &to) override;
 };
 namespace GraphProcessing {
+    const int UNVISITED_VERTEX = -1;
+
     enum VertexMark {
         WHITE, GREY, BLACK
     };
 
-    void DFS(const Graph &g, std::vector<VertexMark> &color, Graph::Vertex v, std::vector<bool>& part, int& err) {
+    void DFS(const Graph &g, std::vector<VertexMark> &color, Graph::Vertex v, std::vector<int>& path,
+             std::vector<std::vector<Graph::Vertex>> &cycles) {
         color[v] = GREY;
         for (Graph::Vertex &u : g.GetNeighbours(v)) {
             if (color[u] == WHITE) {
-                part[u] = !part[v];
-                DFS(g, color, u, part, err);
-            } else {
-                if (part[u] == part[v]) {
-                    err = 1;
+                path[u] = v;
+                DFS(g, color, u, path, cycles);
+            } else if (color[u] == GREY) {
+                std::vector<Graph::Vertex> cycle;
+                Graph::Vertex current = v;
+                while (current != u) {
+                    cycle.push_back(current);
+                    current = path[current];
                 }
+                cycle.push_back(u);
+                std::reverse(cycle.begin(), cycle.end());
+                cycles.push_back(cycle);
             }
         }
         color[v] = BLACK;
     }
 
-    bool IsBypartite(const Graph& g) {
+    std::vector<std::vector<Graph::Vertex>> GetCycles(const Graph &g) {
+        std::vector<std::vector<Graph::Vertex>> cycles;
         std::vector<VertexMark> color(g.GetVertexCount(), WHITE);
-        std::vector<bool> part(g.GetVertexCount());
-        int err = 0;
+        std::vector<int> path(g.GetVertexCount(), UNVISITED_VERTEX);
         for (Graph::Vertex v = 0; v < g.GetVertexCount(); ++v) {
             if (color[v] == WHITE) {
-                DFS(g, color, v, part, err);
-            }
-            if (err) {
-                return false;
+                DFS(g, color, v, path, cycles);
             }
         }
-        return !err;
+        return cycles;
     }
+
 }
 
 int main() {
     size_t vertex_count, edge_count;
     std::cin >> vertex_count >> edge_count;
-    AdjListGraph g(vertex_count, false);
+    AdjListGraph g(vertex_count, true);
     for (size_t i = 0; i < edge_count; ++i) {
         size_t from, to;
         std::cin >> from >> to;
-        g.AddEdge(from-1, to-1);
+        g.AddEdge(from - 1, to - 1);
     }
-    if (GraphProcessing::IsBypartite(g)) {
-        std::cout << "YES" << std::endl;
+    std::vector<std::vector<Graph::Vertex>> cycles = GraphProcessing::GetCycles(g);
+    if (!cycles.empty()) {
+        std::cout << "YES\n";
+        for (Graph::Vertex v : cycles[0]) {
+            std::cout << v + 1 << ' ';
+        }
+        std::cout << std::endl;
     } else {
         std::cout << "NO" << std::endl;
     }
