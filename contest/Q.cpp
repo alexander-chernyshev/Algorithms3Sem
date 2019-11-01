@@ -17,11 +17,9 @@ public:
 
     Graph(size_t _vertex_count, bool _directed);
 
-    virtual std::set<Vertex> GetNeighbours(const Vertex &v) const = 0;
+    virtual std::vector<Vertex> GetNeighbours(const Vertex &v) const = 0;
 
     virtual void AddEdge(const Vertex &from, const Vertex &to) = 0;
-
-    virtual bool CheckEdge(const Vertex &from, const Vertex &to) const = 0;
 
     size_t GetVertexCount() const;
 
@@ -42,15 +40,14 @@ public:
 
 class AdjListGraph : public Graph {
 private:
-    std::vector<std::set<Vertex>> adj_list;
+    std::vector<std::vector<Vertex>> adj_list;
 public:
     AdjListGraph(size_t _vertex_count, bool _directed);
 
-    std::set<Vertex> GetNeighbours(const Vertex &v) const override;
+    std::vector<Vertex> GetNeighbours(const Vertex &v) const override;
 
     void AddEdge(const Vertex &from, const Vertex &to) override;
 
-    bool CheckEdge(const Vertex &from, const Vertex &to) const override;
 };
 
 class WeightedAdjListGraph : public AdjListGraph, WeightInterface {
@@ -122,13 +119,24 @@ namespace GraphProcessing {
 }
 
 int main() {
-    size_t vertex_count, edge_count;
-    std::cin >> vertex_count >> edge_count;
-    WeightedAdjListGraph graph(vertex_count, false);
-    for (size_t i = 0; i < edge_count; ++i) {
-        size_t from, to, weight;
-        std::cin >> from >> to >> weight;
-        graph.AddEdge(from - 1, to - 1, weight);
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    size_t vertex_count;
+    std::cin >> vertex_count;
+    WeightedAdjListGraph graph(vertex_count + 1, false);
+    for (size_t i = 0; i < vertex_count; ++i) {
+        for (size_t j = 0; j < vertex_count; ++j) {
+            int cost;
+            std::cin >> cost;
+            if (i != j) {
+                graph.AddEdge(i, j, cost);
+            }
+        }
+    }
+    for (Graph::Vertex i = 0; i < vertex_count; ++i) {
+        int cost;
+        std::cin >> cost;
+        graph.AddEdge(i, vertex_count, cost);
     }
     std::vector<Edge> mst = GraphProcessing::PrimFindMST(graph);
     std::cout << GraphProcessing::GetMSTWeight(mst);
@@ -155,17 +163,13 @@ AdjListGraph::AdjListGraph(size_t _vertex_count, bool _directed)
 
 void AdjListGraph::AddEdge(const Graph::Vertex &from, const Graph::Vertex &to) {
     ++edge_count;
-    adj_list[from].insert(to);
+    adj_list[from].push_back(to);
     if (!directed) {
-        adj_list[to].insert(from);
+        adj_list[to].push_back(from);
     }
 }
 
-bool AdjListGraph::CheckEdge(const Graph::Vertex &from, const Graph::Vertex &to) const {
-    return !(adj_list[from].find(to) == adj_list[from].end());
-}
-
-std::set<Graph::Vertex> AdjListGraph::GetNeighbours(const Graph::Vertex &v) const {
+std::vector<Graph::Vertex> AdjListGraph::GetNeighbours(const Graph::Vertex &v) const {
     return adj_list[v];
 }
 
@@ -173,16 +177,10 @@ WeightedAdjListGraph::WeightedAdjListGraph(size_t _vertex_count, bool _directed)
         AdjListGraph(_vertex_count, _directed), WeightInterface() {};
 
 void WeightedAdjListGraph::AddEdge(const Graph::Vertex &from, const Graph::Vertex &to, int edge_weight) {
-    if (!CheckEdge(from, to)) {
-        AdjListGraph::AddEdge(from, to);
-        weight[{from, to}] = edge_weight;
-        if (!directed) {
-            weight[{to, from}] = edge_weight;
-        }
-    } else {
-        if (edge_weight < GetEdgeWeight(from, to)) {
-            SetEdgeWeight(from, to, edge_weight);
-        }
+    AdjListGraph::AddEdge(from, to);
+    weight[{from, to}] = edge_weight;
+    if (!directed) {
+        weight[{to, from}] = edge_weight;
     }
 }
 
