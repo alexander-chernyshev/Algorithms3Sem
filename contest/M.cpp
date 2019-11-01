@@ -1,10 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <utility>
-#include <unordered_set>
 #include <set>
-#include <map>
 
 class Graph {
 protected:
@@ -20,8 +17,6 @@ public:
 
     virtual void AddEdge(const Vertex &from, const Vertex &to) = 0;
 
-    virtual bool CheckEdge(const Vertex &from, const Vertex &to) const = 0;
-
     size_t GetVertexCount() const;
 };
 
@@ -34,8 +29,6 @@ public:
     std::vector<Vertex> GetNeighbours(const Vertex &v) const override;
 
     void AddEdge(const Vertex &from, const Vertex &to) override;
-
-    bool CheckEdge(const Vertex &from, const Vertex &to) const override;
 };
 
 namespace GraphProcessing {
@@ -43,77 +36,68 @@ namespace GraphProcessing {
         WHITE, GREY, BLACK
     };
     const int UNVISITED_VERTEX = -1;
+    size_t timer = 0;
 
-    void DFS(const Graph &g, std::vector<VertexMark> &color, size_t &timer,
-             Graph::Vertex v,
+    void DFS(const Graph &g, std::vector<VertexMark> &color, Graph::Vertex v,
              std::vector<size_t> &tin, std::vector<size_t> &fup,
-             std::vector<std::pair<Graph::Vertex, Graph::Vertex>> &bridges, Graph::Vertex prev = UNVISITED_VERTEX) {
+             std::set<Graph::Vertex> &a_points, Graph::Vertex prev = UNVISITED_VERTEX) {
         color[v] = GREY;
         ++timer;
         tin[v] = timer;
         fup[v] = timer;
+        size_t children_count = 0;
         for (Graph::Vertex &u : g.GetNeighbours(v)) {
             if (u != prev) {
                 if (color[u] != WHITE) {
-                    fup[v] = std::min(fup[v], tin[u]);
+                    if (fup[v] > tin[u]) {
+                        fup[v] = tin[u];
+                    }
                 } else {
-                    DFS(g, color, timer, u, tin, fup, bridges, v);
-                    fup[v] = std::min(fup[v], fup[u]);
-                    if (fup[u] > tin[v]) {
-                        bridges.emplace_back(u, v);
+                    DFS(g, color, u, tin, fup, a_points, v);
+                    ++children_count;
+                    if (fup[v] > fup[u]) {
+                        fup[v] = fup[u];
+                    }
+                    if (fup[u] >= tin[v] && prev != -1) {
+                        a_points.insert(v);
                     }
                 }
             }
         }
-        ++timer;
+        if (prev == -1 && children_count > 1)
+            a_points.insert(v);
         color[v] = BLACK;
     }
 
-    std::vector<std::pair<Graph::Vertex, Graph::Vertex>> GetBridges(const Graph &graph) {
+    std::set<Graph::Vertex> GetArticulationPoints(const Graph &graph) {
         std::vector<VertexMark> color(graph.GetVertexCount(), WHITE);
         std::vector<size_t> tin(graph.GetVertexCount());
         std::vector<size_t> fup(graph.GetVertexCount());
-        std::vector<std::pair<Graph::Vertex, Graph::Vertex>> bridges;
-        size_t timer = 0;
+        std::set<Graph::Vertex> a_points;
+        timer = 0;
         for (Graph::Vertex i = 0; i < graph.GetVertexCount(); ++i) {
             if (color[i] == WHITE) {
-                DFS(graph, color, timer, i, tin, fup, bridges);
+                DFS(graph, color, i, tin, fup, a_points);
             }
         }
-        return bridges;
+        return a_points;
     }
 }
 
 
 int main() {
-    std::ios_base::sync_with_stdio(false);
-    std::cin.tie(nullptr);
-    size_t vertex_count, edge_count;
-    std::cin >> vertex_count >> edge_count;
-    AdjListGraph graph(vertex_count, false);
-    std::map<std::pair<Graph::Vertex, Graph::Vertex>, int> edge_index;
+    size_t vert_count, edge_count;
+    std::cin >> vert_count >> edge_count;
+    AdjListGraph graph(vert_count, false);
     for (size_t i = 0; i < edge_count; ++i) {
         size_t from, to;
         std::cin >> from >> to;
-        if (edge_index[{from - 1, to - 1}] == 0 && edge_index[{to - 1, from - 1}] == 0) {
-            edge_index[{from - 1, to - 1}] = i + 1;
-            edge_index[{to - 1, from - 1}] = i + 1;
-            graph.AddEdge(from - 1, to - 1);
-        } else {
-            edge_index[{from - 1, to - 1}] = -1;
-            edge_index[{to - 1, from - 1}] = -1;
-        }
+        graph.AddEdge(from - 1, to - 1);
     }
-    std::vector<std::pair<Graph::Vertex, Graph::Vertex>> bridges = GraphProcessing::GetBridges(graph);
-    std::set<size_t> bridge_indexes;
-    for (std::pair<Graph::Vertex, Graph::Vertex> e : bridges) {
-        if (edge_index[e] != -1) {
-            bridge_indexes.insert(edge_index[e]);
-        }
-    }
-    std::cout << bridge_indexes.size() << '\n';
-    for (size_t i : bridge_indexes) {
-        std::cout << i << '\n';
+    std::set<Graph::Vertex> a_points = GraphProcessing::GetArticulationPoints(graph);
+    std::cout << a_points.size() << '\n';
+    for (Graph::Vertex v : a_points) {
+        std::cout << v + 1 << '\n';
     }
     return 0;
 }
@@ -142,13 +126,4 @@ void AdjListGraph::AddEdge(const Graph::Vertex &from, const Graph::Vertex &to) {
 
 std::vector<Graph::Vertex> AdjListGraph::GetNeighbours(const Graph::Vertex &v) const {
     return adj_list[v];
-}
-
-bool AdjListGraph::CheckEdge(const Graph::Vertex &from, const Graph::Vertex &to) const {
-    for (Graph::Vertex v : adj_list[from]) {
-        if (v == to) {
-            return true;
-        }
-    }
-    return false;
 }
