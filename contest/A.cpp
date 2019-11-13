@@ -30,12 +30,13 @@ public:
 };
 
 namespace GraphProcessing {
+    typedef std::vector<Graph::Vertex> ConnectedComponent;
     enum VertexMark {
         WHITE, GREY, BLACK
     };
 
-    void GetVerticesInSameComponent(const Graph &g, std::vector<VertexMark> &color, Graph::Vertex v,
-                                    std::vector<Graph::Vertex> &component) {
+    void GetVerticesInSameComponent(const Graph &g, std::vector<VertexMark> &color, const Graph::Vertex& v,
+                                    ConnectedComponent &component) {
         color[v] = GREY;
         component.push_back(v);
         for (Graph::Vertex &u : g.GetNeighbours(v)) {
@@ -46,21 +47,21 @@ namespace GraphProcessing {
         color[v] = BLACK;
     }
 
-    std::vector<Graph::Vertex> GetComponent(const Graph &g, Graph::Vertex v) {
+    ConnectedComponent GetComponent(const Graph &g, const Graph::Vertex& v) {
         size_t vertex_count = g.GetVertexCount();
-        std::vector<Graph::Vertex> component;
+        ConnectedComponent component;
         std::vector<VertexMark> color(vertex_count, WHITE);
         GetVerticesInSameComponent(g, color, v, component);
         return component;
     }
 
-    std::vector<std::vector<Graph::Vertex>> GetAllComponents(const Graph &g) {
+    std::vector<ConnectedComponent> GetConnectedComponents(const Graph &g) {
         size_t vertex_count = g.GetVertexCount();
-        std::vector<std::vector<Graph::Vertex >> components;
+        std::vector<ConnectedComponent> components;
         std::vector<VertexMark> color(vertex_count, WHITE);
         for (Graph::Vertex v = 0; v < vertex_count; ++v) {
             if (color[v] == WHITE) {
-                components.emplace_back();
+                components.back();
                 GetVerticesInSameComponent(g, color, v, components[components.size()-1]);
             }
         }
@@ -77,12 +78,12 @@ int main() {
         std::cin >> from >> to;
         graph.AddEdge(from - 1, to - 1);
     }
-    std::vector<std::vector<Graph::Vertex >> result = GraphProcessing::GetAllComponents(graph);
-    std::cout << result.size() << '\n';
-    for (size_t i = 0; i < result.size(); ++i) {
-        std::cout << result[i].size() << '\n';
-        for (size_t j = 0; j < result[i].size(); ++j) {
-            std::cout << result[i][j] + 1 << ' ';
+    std::vector<GraphProcessing::ConnectedComponent> components = GraphProcessing::GetConnectedComponents(graph);
+    std::cout << components.size() << '\n';
+    for (auto& component : components) {
+        std::cout << component.size() << '\n';
+        for (auto v : component) {
+            std::cout << v + 1 << ' ';
         }
         std::cout << '\n';
     }
