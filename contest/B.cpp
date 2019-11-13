@@ -33,11 +33,16 @@ namespace GraphProcessing {
         WHITE, GREY, BLACK
     };
 
-    void DFS(const Graph &g, std::vector<VertexMark> &color, Graph::Vertex v, std::vector<bool>& part, int& err) {
+    enum BipartiteParts {
+        FIRST_PART, SECOND_PART
+    };
+
+    void
+    DFS(const Graph &g, std::vector<VertexMark> &color, Graph::Vertex v, std::vector<BipartiteParts> &part, int &err) {
         color[v] = GREY;
         for (Graph::Vertex &u : g.GetNeighbours(v)) {
             if (color[u] == WHITE) {
-                part[u] = !part[v];
+                part[u] = (part[v] == FIRST_PART ? SECOND_PART : FIRST_PART);
                 DFS(g, color, u, part, err);
             } else {
                 if (part[u] == part[v]) {
@@ -48,9 +53,9 @@ namespace GraphProcessing {
         color[v] = BLACK;
     }
 
-    bool IsBypartite(const Graph& g) {
+    bool IsBipartite(const Graph &g) {
         std::vector<VertexMark> color(g.GetVertexCount(), WHITE);
-        std::vector<bool> part(g.GetVertexCount());
+        std::vector<BipartiteParts> part(g.GetVertexCount());
         int err = 0;
         for (Graph::Vertex v = 0; v < g.GetVertexCount(); ++v) {
             if (color[v] == WHITE) {
@@ -71,9 +76,9 @@ int main() {
     for (size_t i = 0; i < edge_count; ++i) {
         size_t from, to;
         std::cin >> from >> to;
-        g.AddEdge(from-1, to-1);
+        g.AddEdge(from - 1, to - 1);
     }
-    if (GraphProcessing::IsBypartite(g)) {
+    if (GraphProcessing::IsBipartite(g)) {
         std::cout << "YES" << std::endl;
     } else {
         std::cout << "NO" << std::endl;
