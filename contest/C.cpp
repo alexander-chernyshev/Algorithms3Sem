@@ -36,38 +36,39 @@ namespace GraphProcessing {
         WHITE, GREY, BLACK
     };
 
-    void DFS(const Graph &g, std::vector<VertexMark> &color, Graph::Vertex v, std::vector<int>& path,
-             std::vector<std::vector<Graph::Vertex>> &cycles) {
+    void DFS(const Graph &g, std::vector<VertexMark> &color, Graph::Vertex v, std::vector<int>& predecessors,
+             std::vector<Graph::Vertex> &cycle) {
         color[v] = GREY;
         for (Graph::Vertex &u : g.GetNeighbours(v)) {
             if (color[u] == WHITE) {
-                path[u] = v;
-                DFS(g, color, u, path, cycles);
-            } else if (color[u] == GREY) {
-                std::vector<Graph::Vertex> cycle;
+                predecessors[u] = v;
+                DFS(g, color, u, predecessors, cycle);
+            } else if (color[u] == GREY && cycle.empty()) {
                 Graph::Vertex current = v;
                 while (current != u) {
                     cycle.push_back(current);
-                    current = path[current];
+                    current = predecessors[current];
                 }
                 cycle.push_back(u);
                 std::reverse(cycle.begin(), cycle.end());
-                cycles.push_back(cycle);
             }
         }
         color[v] = BLACK;
     }
 
-    std::vector<std::vector<Graph::Vertex>> GetCycles(const Graph &g) {
-        std::vector<std::vector<Graph::Vertex>> cycles;
+    std::vector<Graph::Vertex> GetCycle(const Graph &g) {
+        std::vector<Graph::Vertex> cycle;
         std::vector<VertexMark> color(g.GetVertexCount(), WHITE);
-        std::vector<int> path(g.GetVertexCount(), UNVISITED_VERTEX);
+        std::vector<int> predecessors(g.GetVertexCount(), UNVISITED_VERTEX);
         for (Graph::Vertex v = 0; v < g.GetVertexCount(); ++v) {
             if (color[v] == WHITE) {
-                DFS(g, color, v, path, cycles);
+                DFS(g, color, v, predecessors, cycle);
+            }
+            if (!cycle.empty()) {
+                break;
             }
         }
-        return cycles;
+        return cycle;
     }
 
 }
@@ -81,10 +82,10 @@ int main() {
         std::cin >> from >> to;
         g.AddEdge(from - 1, to - 1);
     }
-    std::vector<std::vector<Graph::Vertex>> cycles = GraphProcessing::GetCycles(g);
-    if (!cycles.empty()) {
+    std::vector<Graph::Vertex> cycle = GraphProcessing::GetCycle(g);
+    if (!cycle.empty()) {
         std::cout << "YES\n";
-        for (Graph::Vertex v : cycles[0]) {
+        for (Graph::Vertex v : cycle) {
             std::cout << v + 1 << ' ';
         }
         std::cout << std::endl;
