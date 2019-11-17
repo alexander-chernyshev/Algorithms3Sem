@@ -49,16 +49,49 @@ public:
     void AddEdge(const Vertex &from, const Vertex &to) override;
 };
 
-size_t GetVertexIndex(size_t table_size, size_t i, size_t j) {
-    return i * table_size + j;
-}
+struct ChessTable {
+    size_t table_size;
 
-std::pair<size_t, size_t> GetCoordinates(size_t table_size, Graph::Vertex v) {
-    std::pair<size_t, size_t> coordinates;
-    coordinates.first = v % table_size;
-    coordinates.second = v / table_size;
-    return coordinates;
-}
+    explicit ChessTable(size_t size) : table_size(size) {};
+
+    size_t GetVertexIndex(size_t i, size_t j) {
+        return i * table_size + j;
+    }
+
+    std::pair<size_t, size_t> GetCoordinates(Graph::Vertex v) {
+        std::pair<size_t, size_t> coordinates;
+        coordinates.first = v / table_size;
+        coordinates.second = v % table_size;
+        return coordinates;
+    }
+
+    bool IsOnTable(std::pair<int, int> coordinates) {
+        int i = coordinates.first;
+        int j = coordinates.second;
+        return (i >= 0 && j >= 0 && i < table_size && j < table_size);
+    }
+
+    std::vector<Graph::Vertex> GetPossibleMoves(Graph::Vertex v) {
+        std::vector<std::pair<int, int>> moves = {{-2, -1},
+                                                        {-2, 1},
+                                                        {-1, 2},
+                                                        {1, 2},
+                                                        {2, 1},
+                                                        {2, -1},
+                                                        {1, -2},
+                                                        {-1, -2}};
+        std::pair<int, int>
+        coordinates = GetCoordinates(v);
+        std::vector<Graph::Vertex> possible_vertices;
+        for (auto shift : moves) {
+            std::pair<int, int> move = {coordinates.first + shift.first, coordinates.second + shift.second};
+            if (IsOnTable(move)) {
+                possible_vertices.push_back(GetVertexIndex(move.first, move.second));
+            }
+        }
+        return possible_vertices;
+    }
+};
 
 namespace GraphProcessing {
     const int UNVISITED_VERTEX = -1;
@@ -105,29 +138,26 @@ int main() {
     std::cin >> table_size;
     size_t vertex_count = table_size * table_size;
     AdjListGraph graph(vertex_count, false);
-    for (size_t i = 0; i < table_size - 2; ++i) {
-        for (size_t j = 0; j < table_size - 1; ++j) {
-            graph.AddEdge(GetVertexIndex(table_size, i, j), GetVertexIndex(table_size, i + 2, j + 1));
-            graph.AddEdge(GetVertexIndex(table_size, i, j + 1), GetVertexIndex(table_size, i + 2, j));
-        }
-    }
-    for (size_t i = 0; i < table_size - 1; ++i) {
-        for (size_t j = 0; j < table_size - 2; ++j) {
-            graph.AddEdge(GetVertexIndex(table_size, i, j), GetVertexIndex(table_size, i + 1, j + 2));
-            graph.AddEdge(GetVertexIndex(table_size, i + 1, j), GetVertexIndex(table_size, i, j + 2));
+    ChessTable table(table_size);
+    for (size_t i = 0; i < table_size; ++i) {
+        for (size_t j = 0; j < table_size; ++j) {
+            Graph::Vertex v = table.GetVertexIndex(i, j);
+            std::vector<Graph::Vertex> possible_moves = table.GetPossibleMoves(v);
+            for (Graph::Vertex u : possible_moves) {
+                graph.AddEdge(v, u);
+            }
         }
     }
     size_t from_x, from_y, to_x, to_y;
     std::cin >> from_x >> from_y >> to_x >> to_y;
-    Graph::Vertex from = GetVertexIndex(table_size, from_y - 1, from_x - 1);
-    Graph::Vertex to = GetVertexIndex(table_size, to_y - 1, to_x - 1);
+    Graph::Vertex from = table.GetVertexIndex(from_y - 1, from_x - 1);
+    Graph::Vertex to = table.GetVertexIndex(to_y - 1, to_x - 1);
     std::vector<Graph::Vertex> path = GraphProcessing::GetShortestPath(graph, from, to);
     std::cout << path.size() - 1 << '\n';
     for (Graph::Vertex v : path) {
-        std::pair<size_t, size_t> coordinates = GetCoordinates(table_size, v);
-        std::cout << coordinates.first + 1 << ' ' << coordinates.second + 1 << '\n';
+        std::pair<size_t, size_t> coordinates = table.GetCoordinates(v);
+        std::cout << coordinates.second + 1 << ' ' << coordinates.first + 1 << '\n';
     }
-
     return 0;
 }
 
