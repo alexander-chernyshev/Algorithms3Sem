@@ -39,45 +39,48 @@ namespace GraphProcessing {
         WHITE, GREY, BLACK
     };
 
-    void FirstDFS(const Graph &g, std::vector<VertexMark> &color, Graph::Vertex v, std::vector<Graph::Vertex> &order) {
+    typedef std::vector<Graph::Vertex> StrongConnectedComponent;
+
+    void MakeTimeOutOrder(const Graph &g, std::vector<VertexMark> &color, Graph::Vertex v,
+                          std::vector<Graph::Vertex> &time_out_order) {
         color[v] = GREY;
         for (Graph::Vertex &u : g.GetNeighbours(v)) {
             if (color[u] == WHITE) {
-                FirstDFS(g, color, u, order);
+                MakeTimeOutOrder(g, color, u, time_out_order);
             }
         }
-        order.push_back(v);
+        time_out_order.push_back(v);
         color[v] = BLACK;
     }
 
-    void SecondDFS(const std::shared_ptr<Graph> &g, std::vector<VertexMark> &color, Graph::Vertex v,
-                   std::vector<Graph::Vertex> &component) {
+    void GetSCComponent(const std::shared_ptr<Graph> &g, std::vector<VertexMark> &color, Graph::Vertex v,
+                        std::vector<Graph::Vertex> &component) {
         color[v] = GREY;
         component.push_back(v);
         for (Graph::Vertex &u : g->GetNeighbours(v)) {
             if (color[u] == WHITE) {
-                SecondDFS(g, color, u, component);
+                GetSCComponent(g, color, u, component);
             }
         }
         color[v] = BLACK;
     }
 
-    std::vector<std::vector<Graph::Vertex>> SCC(const Graph &g) {
+    std::vector<StrongConnectedComponent> GetSCC(const Graph &g) {
         std::vector<VertexMark> color(g.GetVertexCount(), WHITE);
-        std::vector<Graph::Vertex> order;
-        std::vector<std::vector<Graph::Vertex>> components;
+        std::vector<Graph::Vertex> time_out_order;
+        std::vector<StrongConnectedComponent> components;
         std::shared_ptr<Graph> g_transposed = g.GetTransposed();
         for (Graph::Vertex v = 0; v < g.GetVertexCount(); ++v) {
             if (color[v] == WHITE) {
-                FirstDFS(g, color, v, order);
+                MakeTimeOutOrder(g, color, v, time_out_order);
             }
         }
-        std::reverse(order.begin(), order.end());
+        std::reverse(time_out_order.begin(), time_out_order.end());
         color.assign(g.GetVertexCount(), WHITE);
-        for (Graph::Vertex v : order) {
+        for (Graph::Vertex v : time_out_order) {
             if (color[v] == WHITE) {
                 std::vector<Graph::Vertex> component;
-                SecondDFS(g_transposed, color, v, component);
+                GetSCComponent(g_transposed, color, v, component);
                 components.push_back(component);
             }
         }
@@ -94,7 +97,7 @@ int main() {
         std::cin >> from >> to;
         graph.AddEdge(from - 1, to - 1);
     }
-    std::vector<std::vector<Graph::Vertex>> components = GraphProcessing::SCC(graph);
+    std::vector<GraphProcessing::StrongConnectedComponent> components = GraphProcessing::GetSCC(graph);
     std::vector<size_t> component_order(vertex_count);
     for (size_t i = 0; i < components.size(); ++i) {
         for (Graph::Vertex v : components[i]) {
