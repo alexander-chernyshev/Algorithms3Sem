@@ -1,9 +1,3 @@
-<<<<<<< Updated upstream
-//
-// Created by alexander on 19.10.2019.
-//
-
-=======
 #include <iostream>
 #include <vector>
 #include <queue>
@@ -111,9 +105,49 @@ size_t GetVertexIndex(size_t width, size_t i, size_t j) {
 
 std::pair<size_t, size_t> GetCoordinates(size_t width, size_t index) {
     std::pair<size_t, size_t> result;
-    result.first = index / width;
-    result.second = index % width;
-    return result;
+    return { index / width, index % width };
+}
+
+enum Directions {
+    LEFT, UP, RIGHT, DOWN
+};
+
+size_t GetPossibleShift(const std::vector<std::vector<char>> &map,
+                                 size_t map_height,
+                                 size_t map_width,
+                                 int y,
+                                 int x,
+                                 Directions direction) {
+    int i = 0;
+    switch (direction) {
+        case LEFT:
+            while (x - i >= 0 && map[y][x - i] != '#') {
+                ++i;
+            }
+            --i;
+            break;
+        case UP:
+            while (y - i >= 0 && map[y - i][x] != '#') {
+                ++i;
+            }
+            --i;
+            break;
+        case RIGHT:
+            while (x + i < map_width && map[y][x + i] != '#') {
+                ++i;
+            }
+            --i;
+            break;
+        case DOWN:
+            while (y + i < map_height && map[y + i][x] != '#') {
+                ++i;
+            }
+            --i;
+            break;
+        default:
+            return 0;
+    }
+    return i - i/2;
 }
 
 std::vector<size_t> GetPossibleMoves(const std::vector<std::vector<char>> &map,
@@ -123,31 +157,11 @@ std::vector<size_t> GetPossibleMoves(const std::vector<std::vector<char>> &map,
     std::pair<size_t, size_t> coordinates = GetCoordinates(map_width, vertex_index);
     int x = coordinates.second;
     int y = coordinates.first;
-    int i = 0;
     size_t left_move, right_move, up_move, down_move;
-    while (x - i >= 0 && map[y][x - i] != '#') {
-        ++i;
-    }
-    --i;
-    left_move = x - i + i / 2;
-    i = 0;
-    while (x + i < map_width && map[y][x + i] != '#') {
-        ++i;
-    }
-    --i;
-    right_move = x + i - i / 2;
-    i = 0;
-    while (y - i >= 0 && map[y - i][x] != '#') {
-        ++i;
-    }
-    --i;
-    up_move = y - i + i / 2;
-    i = 0;
-    while (y + i < map_height && map[y + i][x] != '#') {
-        ++i;
-    }
-    --i;
-    down_move = y + i - i / 2;
+    left_move = x - GetPossibleShift(map, map_height, map_width, y, x, LEFT);
+    right_move = x + GetPossibleShift(map, map_height, map_width, y, x, RIGHT);
+    up_move = y - GetPossibleShift(map, map_height, map_width, y, x, UP);
+    down_move = y + GetPossibleShift(map, map_height, map_width, y, x, DOWN);
     std::vector<size_t> moves;
     moves.push_back(GetVertexIndex(map_width, y, left_move));
     moves.push_back(GetVertexIndex(map_width, y, right_move));
@@ -170,16 +184,20 @@ int main() {
     for (size_t i = 0; i < height; ++i) {
         for (size_t j = 0; j < width; ++j) {
             if (field[i][j] != '#') {
-                std::vector<size_t> move_indexes = GetPossibleMoves(field, height, width, GetVertexIndex(width, i, j));
-                for (size_t index : move_indexes) {
-                    graph.AddEdge(GetVertexIndex(width, i, j), index);
+                std::vector<size_t> move_vertex_indexes = GetPossibleMoves(field, height, width, GetVertexIndex(width, i, j));
+                for (size_t vertex_index : move_vertex_indexes) {
+                    graph.AddEdge(GetVertexIndex(width, i, j), vertex_index);
                 }
             }
-            if (field[i][j] == 'S') {
-                start_index = GetVertexIndex(width, i, j);
-            }
-            if (field[i][j] == 'T') {
-                finish_index = GetVertexIndex(width, i, j);
+            switch (field[i][j]) {
+                case 'S':
+                    start_index = GetVertexIndex(width, i, j);
+                    break;
+                case 'T':
+                    finish_index = GetVertexIndex(width, i, j);
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -271,4 +289,3 @@ void MatrixGraph::AddEdge(const Graph::Vertex &from, const Graph::Vertex &to) {
         has_edge[to][from] = 1;
     }
 }
->>>>>>> Stashed changes
