@@ -3,32 +3,33 @@
 #include <algorithm>
 #include <set>
 
+template <class T>
 class DSU {
 private:
     size_t size;
     size_t set_count = 0;
-    std::vector<size_t> parent;
+    std::vector<T> parent;
     std::vector<size_t> rank;
+
+    T FindSet(size_t v) {
+        if (v == parent[v]) {
+            return v;
+        }
+        return parent[v] = FindSet(parent[v]);
+    }
 public:
     explicit DSU(size_t _size) : size(_size) {
         parent.resize(size);
         rank.resize(size);
     };
 
-    void MakeSet(size_t v) {
+    void MakeSet(T v) {
         ++set_count;
         parent[v] = v;
         rank[v] = 0;
     }
 
-    size_t FindSet(size_t v) {
-        if (v == parent[v]) {
-            return v;
-        }
-        return parent[v] = FindSet(parent[v]);
-    }
-
-    void UnionSets(size_t a, size_t b) {
+    void UnionSets(T a, T b) {
         a = FindSet(a);
         b = FindSet(b);
         if (a != b) {
@@ -46,12 +47,18 @@ public:
     size_t GetSetCount() const {
         return set_count;
     }
+
+    bool InOneSet(T a, T b) {
+        a = FindSet(a);
+        b = FindSet(b);
+        return a == b;
+    }
 };
 
 int main() {
     size_t vertex_count, edge_count;
     std::cin >> vertex_count >> edge_count;
-    DSU dsu(vertex_count);
+    DSU<size_t> dsu(vertex_count);
     for (size_t i = 0; i < vertex_count; ++i) {
         dsu.MakeSet(i);
     }
