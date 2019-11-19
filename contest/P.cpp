@@ -28,12 +28,6 @@ public:
     bool IsDirected() const;
 };
 
-struct pair_cmp {
-    bool operator()(std::pair<Graph::Vertex, Graph::Vertex> a, std::pair<Graph::Vertex, Graph::Vertex> b) {
-        return a.second > b.second;
-    }
-};
-
 class WeightedGraph : virtual public Graph{
 public:
     WeightedGraph(size_t _vertex_count, bool _directed): Graph(_vertex_count, _directed) {};
@@ -88,27 +82,40 @@ namespace GraphProcessing {
         WHITE, GREY, BLACK
     };
 
+    struct VertexPriority {
+        Graph::Vertex vertex;
+        size_t priority;
+
+        VertexPriority(Graph::Vertex _vertex, size_t _priority): vertex(_vertex), priority(_priority) {}
+    };
+
+    struct vertex_priority_cmp {
+        bool operator()(const VertexPriority& a, const VertexPriority& b) {
+            return a.priority > b.priority;
+        }
+    };
+
+    typedef std::priority_queue<VertexPriority, std::vector<VertexPriority>, vertex_priority_cmp> PriorityQueue;
+
     std::vector<Edge> PrimFindMST(const WeightedGraph &graph) {
         std::vector<Edge> mst;
-        std::priority_queue<std::pair<Graph::Vertex, size_t>,
-                std::vector<std::pair<Graph::Vertex, size_t>>, pair_cmp> queue;
-        std::vector<size_t> key(graph.GetVertexCount(), MAX_WEIGHT);
+        PriorityQueue queue;
+        std::vector<size_t> priority(graph.GetVertexCount(), MAX_WEIGHT);
         std::vector<int> prev(graph.GetVertexCount(), ROOT_VERTEX);
-        key[0] = 0;
+        priority[0] = 0;
         std::vector<bool> visited(graph.GetVertexCount(), false);
         for (Graph::Vertex i = 0; i < graph.GetVertexCount(); ++i) {
-            queue.push({i, key[i]});
+            queue.push(VertexPriority(i, priority[i]));
         }
         while (!queue.empty()) {
-            std::pair<Graph::Vertex, size_t> current_vertex = queue.top();
+            Graph::Vertex v = queue.top().vertex;
             queue.pop();
-            Graph::Vertex v = current_vertex.first;
             visited[v] = true;
             for (Graph::Vertex u : graph.GetNeighbours(v)) {
-                if (!visited[u] && key[u] > graph.GetEdgeWeight(v, u)) {
+                if (!visited[u] && priority[u] > graph.GetEdgeWeight(v, u)) {
                     prev[u] = v;
-                    key[u] = graph.GetEdgeWeight(v, u);
-                    queue.push({u, key[u]});
+                    priority[u] = graph.GetEdgeWeight(v, u);
+                    queue.push(VertexPriority(u, priority[u]));
                 }
             }
         }
