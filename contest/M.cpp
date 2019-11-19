@@ -35,30 +35,37 @@ namespace GraphProcessing {
     enum VertexMark {
         WHITE, GREY, BLACK
     };
-    const int UNVISITED_VERTEX = -1;
+    const int ROOT_VERTEX = -1;
     size_t timer = 0;
 
-    void DFS(const Graph &g, std::vector<VertexMark> &color, Graph::Vertex v,
-             std::vector<size_t> &tin, std::vector<size_t> &fup,
-             std::set<Graph::Vertex> &a_points, Graph::Vertex prev = UNVISITED_VERTEX) {
-        color[v] = GREY;
+    struct DFSParameters {
+        std::vector<size_t> tin;
+        std::vector<size_t> fup;
+        std::vector<VertexMark> color;
+
+        explicit DFSParameters(size_t graph_size) {
+            tin.resize(graph_size);
+            fup.resize(graph_size);
+            color.assign(graph_size, WHITE);
+        }
+    };
+
+    void DFS(const Graph &g, DFSParameters &dfs_parameters, std::set<Graph::Vertex> &a_points,
+             Graph::Vertex v, Graph::Vertex prev = ROOT_VERTEX) {
+        dfs_parameters.color[v] = GREY;
         ++timer;
-        tin[v] = timer;
-        fup[v] = timer;
+        dfs_parameters.tin[v] = timer;
+        dfs_parameters.fup[v] = timer;
         size_t children_count = 0;
         for (Graph::Vertex &u : g.GetNeighbours(v)) {
             if (u != prev) {
-                if (color[u] != WHITE) {
-                    if (fup[v] > tin[u]) {
-                        fup[v] = tin[u];
-                    }
+                if (dfs_parameters.color[u] != WHITE) {
+                    dfs_parameters.fup[v] = std::min(dfs_parameters.fup[v], dfs_parameters.tin[u]);
                 } else {
-                    DFS(g, color, u, tin, fup, a_points, v);
+                    DFS(g, dfs_parameters, a_points, u, v);
                     ++children_count;
-                    if (fup[v] > fup[u]) {
-                        fup[v] = fup[u];
-                    }
-                    if (fup[u] >= tin[v] && prev != -1) {
+                    dfs_parameters.fup[v] = std::min(dfs_parameters.fup[v], dfs_parameters.fup[u]);
+                    if (dfs_parameters.fup[u] >= dfs_parameters.tin[v] && prev != -1) {
                         a_points.insert(v);
                     }
                 }
@@ -66,18 +73,15 @@ namespace GraphProcessing {
         }
         if (prev == -1 && children_count > 1)
             a_points.insert(v);
-        color[v] = BLACK;
+        dfs_parameters.color[v] = BLACK;
     }
 
     std::set<Graph::Vertex> GetArticulationPoints(const Graph &graph) {
-        std::vector<VertexMark> color(graph.GetVertexCount(), WHITE);
-        std::vector<size_t> tin(graph.GetVertexCount());
-        std::vector<size_t> fup(graph.GetVertexCount());
+        DFSParameters dfs_parameters(graph.GetVertexCount());
         std::set<Graph::Vertex> a_points;
-        timer = 0;
         for (Graph::Vertex i = 0; i < graph.GetVertexCount(); ++i) {
-            if (color[i] == WHITE) {
-                DFS(graph, color, i, tin, fup, a_points);
+            if (dfs_parameters.color[i] == WHITE) {
+                DFS(graph, dfs_parameters, a_points, i);
             }
         }
         return a_points;
