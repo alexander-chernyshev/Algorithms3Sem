@@ -7,6 +7,19 @@
 
 const int MAX_WEIGHT = 1000000000;
 
+struct FlightTime {
+    int from;
+    int to;
+
+    FlightTime(int _from, int _to): from(_from), to(_to) {}
+};
+
+struct flight_time_cmp {
+    bool operator()(const FlightTime& a, const FlightTime& b) {
+        return a.from < b.from;
+    }
+};
+
 class Graph {
 protected:
     size_t vertex_count;
@@ -26,51 +39,58 @@ public:
     bool IsDirected() const;
 };
 
-struct pair_cmp {
-    bool operator()(std::pair<Graph::Vertex, Graph::Vertex> a, std::pair<Graph::Vertex, Graph::Vertex> b) {
-        return a.first < b.first;
-    }
-};
 
-class WeightInterface {
-protected:
-    std::map<std::pair<Graph::Vertex, Graph::Vertex>, std::vector<std::pair<int, int>>> weight;
+template <class T>
+class WeightedGraph : virtual public Graph {
 public:
+    WeightedGraph(size_t _vertex_count, bool _directed) : Graph(_vertex_count, _directed) {};
+
+    virtual void AddEdge(const Graph::Vertex &from, const Graph::Vertex &to, T edge_weight) = 0;
+
+    virtual std::vector<T> GetEdgeWeight(const Graph::Vertex &from, const Graph::Vertex &to) const = 0;
 };
 
-class AdjListGraph : public Graph {
+class AdjListGraph : virtual public Graph {
 private:
     std::vector<std::vector<Vertex>> adj_list;
 public:
-    AdjListGraph(size_t _vertex_count, bool _directed);
+    AdjListGraph(size_t _vertex_count, bool _directed) : Graph(_vertex_count, _directed) {
+        adj_list.resize(_vertex_count);
+    }
 
     std::vector<Vertex> GetNeighbours(const Vertex &v) const override;
 
     void AddEdge(const Vertex &from, const Vertex &to) override;
 };
 
-class WeightedAdjListGraph : public AdjListGraph, WeightInterface {
+
+template <class T>
+class WeightedAdjListGraph : virtual public AdjListGraph, virtual public WeightedGraph<T> {
+private:
+    std::map<std::pair<Graph::Vertex, Graph::Vertex>, std::vector<T>> weight;
 public:
-    WeightedAdjListGraph(size_t _vertex_count, bool _directed);
+    WeightedAdjListGraph(size_t _vertex_count, bool _directed) : Graph(_vertex_count, _directed),
+                                                                 AdjListGraph(_vertex_count, _directed),
+                                                                 WeightedGraph<T>(_vertex_count, _directed) {};
 
-    void AddEdge(const Vertex &from, const Vertex &to, int first_val, int second_val);
+    void AddEdge(const Vertex &from, const Vertex &to, T edge_weight) override;
 
-    std::vector<std::pair<int, int>> GetEdgeWeight(const Vertex &from, const Vertex &to) const;
+    std::vector<T> GetEdgeWeight(const Vertex &from, const Vertex &to) const override;
+
 };
 
 namespace GraphProcessing {
     const int ROOT_VERTEX = -1;
 
-
-    std::vector<int> FordBellman(const WeightedAdjListGraph &graph, Graph::Vertex start) {
+    std::vector<int> FordBellman(const WeightedAdjListGraph<FlightTime> &graph, Graph::Vertex start) {
         std::vector<int> dist(graph.GetVertexCount(), MAX_WEIGHT);
         dist[start] = 0;
         for (size_t i = 0; i < graph.GetVertexCount(); ++i) {
             for (Graph::Vertex u = 0; u < graph.GetVertexCount(); ++u) {
                 for (Graph::Vertex v : graph.GetNeighbours(u)) {
-                    for (std::pair<int, int> e: graph.GetEdgeWeight(u, v)) {
-                        if (e.first >= dist[u] && e.second < dist[v]) {
-                            dist[v] = e.second;
+                    for (FlightTime e: graph.GetEdgeWeight(u, v)) {
+                        if (e.from >= dist[u] && e.to < dist[v]) {
+                            dist[v] = e.to;
                         }
                     }
                 }
@@ -86,12 +106,12 @@ int main() {
     std::cin >> vertex_count;
     std::cin >> start >> finish;
     std::cin >> edge_count;
-    WeightedAdjListGraph graph(vertex_count, true);
+    WeightedAdjListGraph<FlightTime> graph(vertex_count, true);
     for (size_t i = 0; i < edge_count; ++i) {
         size_t from, to;
         int dep_time, arr_time;
         std::cin >> from >> dep_time >> to >> arr_time;
-        graph.AddEdge(from - 1, to - 1, dep_time, arr_time);
+        graph.AddEdge(from - 1, to - 1, FlightTime(dep_time, arr_time));
     }
     std::vector<int> distances = GraphProcessing::FordBellman(graph, start - 1);
     int final_time = distances[finish - 1];
@@ -112,11 +132,6 @@ size_t Graph::GetVertexCount() const {
     return vertex_count;
 }
 
-AdjListGraph::AdjListGraph(size_t _vertex_count, bool _directed)
-        : Graph(_vertex_count, _directed) {
-    adj_list = std::vector<std::vector<Graph::Vertex>>(vertex_count);
-}
-
 void AdjListGraph::AddEdge(const Graph::Vertex &from, const Graph::Vertex &to) {
     ++edge_count;
     adj_list[from].push_back(to);
@@ -129,15 +144,17 @@ std::vector<Graph::Vertex> AdjListGraph::GetNeighbours(const Graph::Vertex &v) c
     return adj_list[v];
 }
 
-WeightedAdjListGraph::WeightedAdjListGraph(size_t _vertex_count, bool _directed) :
-        AdjListGraph(_vertex_count, _directed), WeightInterface() {};
-
-void WeightedAdjListGraph::AddEdge(const Graph::Vertex &from, const Graph::Vertex &to, int first_val, int second_val) {
+template <class T>
+void WeightedAdjListGraph<T>::AddEdge(const Graph::Vertex &from, const Graph::Vertex &to, T edge_weight) {
     AdjListGraph::AddEdge(from, to);
-    weight[{from, to}].push_back({first_val, second_val});
+    weight[{from, to}].push_back(edge_weight);
+    if (!directed) {
+        weight[{to, from}].push_back(edge_weight);
+    }
 }
 
-std::vector<std::pair<int, int>>
-WeightedAdjListGraph::GetEdgeWeight(const Graph::Vertex &from, const Graph::Vertex &to) const {
-    return weight.at({from, to});
+template <class T>
+std::vector<T> WeightedAdjListGraph<T>::GetEdgeWeight(const Graph::Vertex &from, const Graph::Vertex &to) const {
+    return weight.at(std::make_pair(from, to));
 }
+
