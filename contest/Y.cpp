@@ -68,18 +68,16 @@ public:
     void SetEdgeWeight(const Graph::Vertex &from, const Graph::Vertex &to, int edge_weight) override;
 };
 
-
-
 namespace GraphProcessing {
     struct VertexPriority {
         Graph::Vertex vertex;
         size_t priority;
 
-        VertexPriority(Graph::Vertex _vertex, size_t _priority): vertex(_vertex), priority(_priority) {}
+        VertexPriority(Graph::Vertex _vertex, size_t _priority) : vertex(_vertex), priority(_priority) {}
     };
 
     struct vertex_priority_cmp {
-        bool operator()(const VertexPriority& a, const VertexPriority& b) {
+        bool operator()(const VertexPriority &a, const VertexPriority &b) {
             return a.priority > b.priority;
         }
     };
@@ -87,7 +85,7 @@ namespace GraphProcessing {
     typedef std::priority_queue<VertexPriority, std::vector<VertexPriority>, vertex_priority_cmp> PriorityQueue;
 
     std::vector<size_t> Dijkstra(const WeightedAdjListGraph &graph, Graph::Vertex start) {
-        std::vector<size_t > dist(graph.GetVertexCount(), MAX_WEIGHT);
+        std::vector<size_t> dist(graph.GetVertexCount(), MAX_WEIGHT);
         std::vector<Graph::Vertex> visited(graph.GetVertexCount(), false);
         dist[start] = 0;
         PriorityQueue queue;
