@@ -22,56 +22,78 @@ public:
 
     virtual void AddEdge(const Vertex &from, const Vertex &to) = 0;
 
+
     size_t GetVertexCount() const;
 
     bool IsDirected() const;
 };
 
-struct pair_cmp {
-    bool operator()(std::pair<size_t, size_t> a, std::pair<size_t, size_t> b) {
-        return a.second > b.second;
-    }
-};
-
-class WeightInterface {
-protected:
-    std::map<std::pair<Graph::Vertex, Graph::Vertex>, size_t> weight;
+class WeightedGraph : virtual public Graph {
 public:
+    WeightedGraph(size_t _vertex_count, bool _directed) : Graph(_vertex_count, _directed) {};
+
+    virtual void AddEdge(const Graph::Vertex &from, const Graph::Vertex &to, int edge_weight) = 0;
+
+    virtual int GetEdgeWeight(const Graph::Vertex &from, const Graph::Vertex &to) const = 0;
+
+    virtual void SetEdgeWeight(const Graph::Vertex &from, const Graph::Vertex &to, int edge_weight) = 0;
 };
 
-class AdjListGraph : public Graph {
+class AdjListGraph : virtual public Graph {
 private:
     std::vector<std::vector<Vertex>> adj_list;
 public:
-    AdjListGraph(size_t _vertex_count, bool _directed);
+    AdjListGraph(size_t _vertex_count, bool _directed) : Graph(_vertex_count, _directed) {
+        adj_list.resize(_vertex_count);
+    }
 
     std::vector<Vertex> GetNeighbours(const Vertex &v) const override;
 
     void AddEdge(const Vertex &from, const Vertex &to) override;
+
 };
 
-class WeightedAdjListGraph : public AdjListGraph, WeightInterface {
+class WeightedAdjListGraph : virtual public AdjListGraph, virtual public WeightedGraph {
+private:
+    std::map<std::pair<Graph::Vertex, Graph::Vertex>, int> weight;
 public:
-    WeightedAdjListGraph(size_t _vertex_count, bool _directed);
+    WeightedAdjListGraph(size_t _vertex_count, bool _directed) : Graph(_vertex_count, _directed),
+                                                                 AdjListGraph(_vertex_count, _directed),
+                                                                 WeightedGraph(_vertex_count, _directed) {};
 
-    void AddEdge(const Vertex &from, const Vertex &to, size_t edge_weight);
+    void AddEdge(const Vertex &from, const Vertex &to, int edge_weight) override;
 
-    size_t GetEdgeWeight(Vertex from, Vertex to) const;
+    int GetEdgeWeight(const Vertex &from, const Vertex &to) const override;
 
-    void SetEdgeWeight(const Graph::Vertex &from, const Graph::Vertex &to, size_t edge_weight);
+    void SetEdgeWeight(const Graph::Vertex &from, const Graph::Vertex &to, int edge_weight) override;
 };
+
+
 
 namespace GraphProcessing {
+    struct VertexPriority {
+        Graph::Vertex vertex;
+        size_t priority;
+
+        VertexPriority(Graph::Vertex _vertex, size_t _priority): vertex(_vertex), priority(_priority) {}
+    };
+
+    struct vertex_priority_cmp {
+        bool operator()(const VertexPriority& a, const VertexPriority& b) {
+            return a.priority > b.priority;
+        }
+    };
+
+    typedef std::priority_queue<VertexPriority, std::vector<VertexPriority>, vertex_priority_cmp> PriorityQueue;
 
     std::vector<size_t> Dijkstra(const WeightedAdjListGraph &graph, Graph::Vertex start) {
-        std::vector<Graph::Vertex> dist(graph.GetVertexCount(), MAX_WEIGHT);
+        std::vector<size_t > dist(graph.GetVertexCount(), MAX_WEIGHT);
         std::vector<Graph::Vertex> visited(graph.GetVertexCount(), false);
         dist[start] = 0;
-        std::priority_queue<std::pair<Graph::Vertex, size_t>,
-                std::vector<std::pair<Graph::Vertex, size_t>>, pair_cmp> queue;
+        PriorityQueue queue;
         queue.push({start, 0});
         while (!queue.empty()) {
-            Graph::Vertex current = queue.top().first;
+            Graph::Vertex current = queue.top().vertex;
             queue.pop();
             if (visited[current]) {
                 continue;
@@ -89,24 +111,22 @@ namespace GraphProcessing {
     }
 }
 
-void CalculateDistances(size_t num) {
-    for (size_t i = 0; i < num; ++i) {
-        size_t vertex_count, edge_count;
-        std::cin >> vertex_count >> edge_count;
-        WeightedAdjListGraph graph(vertex_count, false);
-        for (size_t j = 0; j < edge_count; ++j) {
-            size_t from, to, edge_weight;
-            std::cin >> from >> to >> edge_weight;
-            graph.AddEdge(from, to, edge_weight);
-        }
-        size_t start_vertex;
-        std::cin >> start_vertex;
-        std::vector<size_t> distances = GraphProcessing::Dijkstra(graph, start_vertex);
-        for (size_t distance : distances) {
-            std::cout << distance << ' ';
-        }
-        std::cout << '\n';
+void CalculateDistances() {
+    size_t vertex_count, edge_count;
+    std::cin >> vertex_count >> edge_count;
+    WeightedAdjListGraph graph(vertex_count, false);
+    for (size_t j = 0; j < edge_count; ++j) {
+        size_t from, to, edge_weight;
+        std::cin >> from >> to >> edge_weight;
+        graph.AddEdge(from, to, edge_weight);
     }
+    size_t start_vertex;
+    std::cin >> start_vertex;
+    std::vector<size_t> distances = GraphProcessing::Dijkstra(graph, start_vertex);
+    for (size_t distance : distances) {
+        std::cout << distance << ' ';
+    }
+    std::cout << '\n';
 }
 
 int main() {
@@ -114,7 +134,9 @@ int main() {
     std::cin.tie(nullptr);
     size_t num;
     std::cin >> num;
-    CalculateDistances(num);
+    for (size_t i = 0; i < num; ++i) {
+        CalculateDistances();
+    }
     return 0;
 }
 
@@ -131,11 +153,6 @@ size_t Graph::GetVertexCount() const {
     return vertex_count;
 }
 
-AdjListGraph::AdjListGraph(size_t _vertex_count, bool _directed)
-        : Graph(_vertex_count, _directed) {
-    adj_list.resize(_vertex_count);
-}
-
 void AdjListGraph::AddEdge(const Graph::Vertex &from, const Graph::Vertex &to) {
     ++edge_count;
     adj_list[from].push_back(to);
@@ -148,10 +165,7 @@ std::vector<Graph::Vertex> AdjListGraph::GetNeighbours(const Graph::Vertex &v) c
     return adj_list[v];
 }
 
-WeightedAdjListGraph::WeightedAdjListGraph(size_t _vertex_count, bool _directed) :
-        AdjListGraph(_vertex_count, _directed), WeightInterface() {};
-
-void WeightedAdjListGraph::AddEdge(const Graph::Vertex &from, const Graph::Vertex &to, size_t edge_weight) {
+void WeightedAdjListGraph::AddEdge(const Graph::Vertex &from, const Graph::Vertex &to, int edge_weight) {
     AdjListGraph::AddEdge(from, to);
     if (weight.find({from, to}) == weight.end()) {
         weight[{from, to}] = edge_weight;
@@ -168,13 +182,14 @@ void WeightedAdjListGraph::AddEdge(const Graph::Vertex &from, const Graph::Verte
     }
 }
 
-size_t WeightedAdjListGraph::GetEdgeWeight(Graph::Vertex from, Graph::Vertex to) const {
-    return weight.at({from, to});
+int WeightedAdjListGraph::GetEdgeWeight(const Graph::Vertex &from, const Graph::Vertex &to) const {
+    return weight.at(std::make_pair(from, to));
 }
 
-void WeightedAdjListGraph::SetEdgeWeight(const Graph::Vertex &from, const Graph::Vertex &to, size_t edge_weight) {
+void WeightedAdjListGraph::SetEdgeWeight(const Graph::Vertex &from, const Graph::Vertex &to, int edge_weight) {
     weight[{from, to}] = edge_weight;
     if (!directed) {
         weight[{to, from}] = edge_weight;
     }
 }
+
