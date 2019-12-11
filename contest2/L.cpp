@@ -9,15 +9,16 @@
 #include <cstdlib>
 #include <ctime>
 
+const size_t MODULE =1000000000;
 template<class T>
 struct AVLNode {
     T value;
     size_t height;
-    size_t tree_size;
+    T tree_sum;
     AVLNode<T> *left = nullptr;
     AVLNode<T> *right = nullptr;
 
-    explicit AVLNode(T val, size_t _tree_size = 1, size_t h = 1) : value(val), tree_size(_tree_size), height(h) {}
+    explicit AVLNode(T val, T _tree_sum = 0, size_t h = 1) : tree_sum(_tree_sum), value(val), height(h) {}
 
 };
 
@@ -30,8 +31,8 @@ private:
         return (node ? node->height : 0);
     }
 
-    static size_t subtree_size(AVLNode<T> *node) {
-        return (node ? node->tree_size : 0);
+    static T subtree_sum(AVLNode<T>* node) {
+        return (node ? node->tree_sum : 0);
     }
 
     static int balance_factor(AVLNode<T> *node) {
@@ -44,10 +45,10 @@ private:
         node->height = std::max(left_h, right_h) + 1;
     }
 
-    static void fix_subtree_size(AVLNode<T> *node) {
-        size_t left_size = subtree_size(node->left);
-        size_t right_size = subtree_size(node->right);
-        node->tree_size = left_size + right_size + 1;
+    static void fix_subtree_sum(AVLNode<T> *node) {
+        T left_sum = subtree_sum(node->left);
+        T right_sum = subtree_sum(node->right);
+        node->tree_sum = left_sum + right_sum + node->value;
     }
 
     AVLNode<T> *rotate_right(AVLNode<T> *node) {
@@ -56,8 +57,8 @@ private:
         moved_node->right = node;
         fix_height(node);
         fix_height(moved_node);
-        fix_subtree_size(node);
-        fix_subtree_size(moved_node);
+        fix_subtree_sum(node);
+        fix_subtree_sum(moved_node);
         return moved_node;
     }
 
@@ -67,14 +68,14 @@ private:
         moved_node->left = node;
         fix_height(node);
         fix_height(moved_node);
-        fix_subtree_size(node);
-        fix_subtree_size(moved_node);
+        fix_subtree_sum(node);
+        fix_subtree_sum(moved_node);
         return moved_node;
     }
 
     AVLNode<T> *balance(AVLNode<T> *node) {
         fix_height(node);
-        fix_subtree_size(node);
+        fix_subtree_sum(node);
         if (balance_factor(node) == 2) {
             if (balance_factor(node->right) < 0) {
                 node->right = rotate_right(node->right);
@@ -92,7 +93,7 @@ private:
 
     AVLNode<T> *insert(AVLNode<T> *node, T value) {
         if (node == nullptr) {
-            return new AVLNode<T>(value);
+            return new AVLNode<T>(value, value);
         }
         if (value < node->value) {
             node->left = insert(node->left, value);
@@ -137,41 +138,15 @@ private:
         return balance(node);
     }
 
-    AVLNode<T> *get_kth_element(AVLNode<T> *node, size_t k) {
+    T get_lower_sum(AVLNode<T>* node, T value) {
         if (node == nullptr) {
-            return nullptr;
-        };
-        if (subtree_size(node->left) + 1 == k) {
-            return node;
-        } else if (subtree_size(node->left) + 1 > k) {
-            return get_kth_element(node->left, k);
+            return 0;
+        }
+        if (value <= node->value) {
+            return get_lower_sum(node->left, value);
         } else {
-            return get_kth_element(node->right, k - subtree_size(node->left) - 1);
+            return get_lower_sum(node->right, value) + subtree_sum(node->left) + node->value;
         }
-    }
-
-    void next(AVLNode<T> *node, T value, std::pair<T, bool> &result) {
-        if (node == nullptr) {
-            return;
-        }
-        next(node->left, value, result);
-        if (node->value > value && !result.second) {
-            result.first = node->value;
-            result.second = true;
-        }
-        next(node->right, value, result);
-    }
-
-    void previous(AVLNode<T> *node, T value, std::pair<T, bool> &result) {
-        if (node == nullptr) {
-            return;
-        }
-        previous(node->right, value, result);
-        if (node->value < value && !result.second) {
-            result.first = node->value;
-            result.second = true;
-        }
-        previous(node->left, value, result);
     }
 
 public:
@@ -204,81 +179,39 @@ public:
         root = remove(root, value);
     }
 
-    std::pair<T, bool> GetKthElementValue(size_t k) {
-        AVLNode<T> *node = get_kth_element(root, k);
-        if (node == nullptr) {
-            return {T(0), false};
-        } else {
-            return {node->value, true};
-        }
+    T GetLowerSum(T value) {
+        return get_lower_sum(root, value);
     }
 
-    std::pair<T, bool> Next(T value) {
-        std::pair<T, bool> result(0, false);
-        next(root, value, result);
-        return result;
-    }
-
-    std::pair<T, bool> Previous(T value) {
-        std::pair<T, bool> result(0, false);
-        previous(root, value, result);
-        return result;
+    T GetSegmentSum(T left, T right) {
+        return GetLowerSum(right+1) - GetLowerSum(left);
     }
 };
 
-template<class T>
-void Execute(AVLTree<T> &tree) {
-    std::string command;
-    while (std::cin >> command) {
-        if (command == "insert") {
+template <class T>
+void Execute(AVLTree<T>& tree, size_t query_count) {
+    size_t buffer = 0;
+    for (size_t i = 0; i < query_count; ++i) {
+        char query;
+        std::cin >> query;
+        if (query == '+') {
             T value;
             std::cin >> value;
-            tree.Insert(value);
-        } else if (command == "delete") {
-            T value;
-            std::cin >> value;
-            tree.Remove(value);
-        } else if (command == "exists") {
-            T value;
-            std::cin >> value;
-            if (tree.Exists(value)) {
-                std::cout << "true\n";
-            } else {
-                std::cout << "false\n";
-            }
-        } else if (command == "next") {
-            T value;
-            std::cin >> value;
-            std::pair<T, bool> result = tree.Next(value);
-            if (!result.second) {
-                std::cout << "none\n";
-            } else {
-                std::cout << result.first << '\n';
-            }
-        } else if (command == "prev") {
-            T value;
-            std::cin >> value;
-            std::pair<T, bool> result = tree.Previous(value);
-            if (!result.second) {
-                std::cout << "none\n";
-            } else {
-                std::cout << result.first << '\n';
-            }
-        } else if (command == "kth") {
-            size_t k;
-            std::cin >> k;
-            std::pair<T, bool> result = tree.GetKthElementValue(k);
-            if (!result.second) {
-                std::cout << "none\n";
-            } else {
-                std::cout << result.first << '\n';
-            }
+            tree.Insert((buffer + value) % MODULE);
+            buffer = 0;
+        }
+        else if (query == '?') {
+            T left, right;
+            std::cin >> left >> right;
+            std::cout << (buffer = tree.GetSegmentSum(left, right)) << '\n';
         }
     }
 }
 
 int main() {
-    AVLTree<long long int> tree;
-    Execute(tree);
+    size_t query_count;
+    std::cin >> query_count;
+    AVLTree<size_t> tree;
+    Execute(tree, query_count);
     return 0;
 }
