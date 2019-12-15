@@ -68,24 +68,26 @@ public:
     void SetEdgeWeight(const Graph::Vertex &from, const Graph::Vertex &to, int edge_weight) override;
 };
 
+
+
 namespace GraphProcessing {
-    struct VertexPriority {
+    struct VertexDistance {
         Graph::Vertex vertex;
         size_t priority;
 
-        VertexPriority(Graph::Vertex _vertex, size_t _priority) : vertex(_vertex), priority(_priority) {}
+        VertexDistance(Graph::Vertex _vertex, size_t _priority): vertex(_vertex), priority(_priority) {}
     };
 
     struct vertex_priority_cmp {
-        bool operator()(const VertexPriority &a, const VertexPriority &b) {
+        bool operator()(const VertexDistance& a, const VertexDistance& b) {
             return a.priority > b.priority;
         }
     };
 
-    typedef std::priority_queue<VertexPriority, std::vector<VertexPriority>, vertex_priority_cmp> PriorityQueue;
+    typedef std::priority_queue<VertexDistance, std::vector<VertexDistance>, vertex_priority_cmp> PriorityQueue;
 
-    std::vector<size_t> Dijkstra(const WeightedAdjListGraph &graph, Graph::Vertex start) {
-        std::vector<size_t> dist(graph.GetVertexCount(), MAX_WEIGHT);
+    std::vector<size_t> Dijkstra(const WeightedGraph &graph, Graph::Vertex start) {
+        std::vector<size_t > dist(graph.GetVertexCount(), MAX_WEIGHT);
         std::vector<Graph::Vertex> visited(graph.GetVertexCount(), false);
         dist[start] = 0;
         PriorityQueue queue;
@@ -118,9 +120,9 @@ void CalculateDistances() {
         std::cin >> from >> to >> edge_weight;
         graph.AddEdge(from, to, edge_weight);
     }
-    size_t start_vertex;
-    std::cin >> start_vertex;
-    std::vector<size_t> distances = GraphProcessing::Dijkstra(graph, start_vertex);
+    size_t start_vertex_index;
+    std::cin >> start_vertex_index;
+    std::vector<size_t> distances = GraphProcessing::Dijkstra(graph, start_vertex_index);
     for (size_t distance : distances) {
         std::cout << distance << ' ';
     }
@@ -190,4 +192,3 @@ void WeightedAdjListGraph::SetEdgeWeight(const Graph::Vertex &from, const Graph:
         weight[{to, from}] = edge_weight;
     }
 }
-
