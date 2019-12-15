@@ -105,15 +105,13 @@ namespace GraphProcessing {
         return reachable_vertices;
     }
 
-    std::vector<int> FordBellman(const WeightedAdjListGraph &graph, Graph::Vertex start) {
+    std::vector<int> GetAllDistances(const WeightedAdjListGraph &graph, Graph::Vertex start) {
         std::vector<int> dist(graph.GetVertexCount(), MAX_WEIGHT);
         dist[start] = 0;
         for (size_t i = 0; i < graph.GetVertexCount() - 1; ++i) {
             for (Graph::Vertex u = 0; u < graph.GetVertexCount(); ++u) {
                 for (Graph::Vertex v : graph.GetNeighbours(u)) {
-                    if (dist[v] > dist[u] + graph.GetEdgeWeight(u, v)) {
-                        dist[v] = dist[u] + graph.GetEdgeWeight(u, v);
-                    }
+                    dist[v] = std::min(dist[v], dist[u] + graph.GetEdgeWeight(u, v));
                 }
             }
         }
@@ -136,7 +134,7 @@ int main() {
         std::cin >> from >> to >> edge_w;
         graph.AddEdge(from - 1, to - 1, edge_w);
     }
-    std::vector<int> distances = GraphProcessing::FordBellman(graph, 0);
+    std::vector<int> distances = GraphProcessing::GetAllDistances(graph, 0);
     for (size_t i = 0; i < vertex_count; ++i) {
         std::cout << distances[i] << ' ';
     }
